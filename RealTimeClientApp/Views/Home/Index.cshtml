@@ -1,0 +1,56 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+
+        <h1>SignalR Real-Time Messaging</h1>
+        <div>
+            <input type="text" id="userInput" placeholder="User" />
+            <input type="text" id="messageInput" placeholder="Message" />
+            <button onclick="sendMessage()">Send Message</button>
+        </div>
+
+        <ul id="messagesList"></ul>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.9/signalr.min.js"></script>
+        <script>
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7123/messagehub") // Your SignalR hub URL
+            .configureLogging(signalR.LogLevel.Trace) // Use Trace for detailed logging
+            .build();
+
+
+        connection.start()
+            .then(() => console.log("SignalR Connected."))
+            .catch(err => console.error("Connection error:", err));
+
+        if (connection.state === signalR.HubConnectionState.Connected) {
+            connection.invoke("SendMessage", "Hello, World!")
+                .catch(err => console.error("Error sending message:", err));
+        } else {
+            console.warn("SignalR connection is not established. Current state:", connection.state);
+        }
+
+
+            // Function to send message
+            async function sendMessage() {
+                const user = document.getElementById("userInput").value;
+                const message = document.getElementById("messageInput").value;
+                await connection.invoke("SendMessage", user, message);
+            }
+
+            // Start the connection
+            connection.start().then(() => {
+                console.log("SignalR Connected.");
+            }).catch(err => console.error(err.toString()));
+
+            // Receive and display messages from the hub
+            connection.on("ReceiveMessage", (user, message) => {
+                const li = document.createElement("li");
+                li.textContent = `${user}: ${message}`;
+                document.getElementById("messagesList").appendChild(li);
+            });
+        </script>
+
+</div>
